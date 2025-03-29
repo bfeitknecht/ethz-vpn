@@ -27,7 +27,8 @@ security add -s 'eth-vpn' -a 'KÜRZEL' -w 'PASSWORT'
 
 
 ```
-echo "alias vpn=~$(pwd)/ethz_vpn.sh" >> ~/.zshrc
+git clone https://github.com/bfeitknecht/ethz-vpn
+echo "alias vpn=(pwd)/ethz-vpn/ethz-vpn.sh" >> ~/.zshrc
 ```
 
 Or similar for your shell
