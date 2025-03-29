@@ -3,7 +3,7 @@
 This is a small CLI script for managing the ETHZ VPN on macOS.
 
 ## Dependencies
-- `totp-cli` database with ETH OTP secret
+- `totp-cli` database with ETHZ OTP secret token
 - `security` keychain item with VPN password
 
 
@@ -33,5 +33,5 @@ Or similar for your shell
 
 
 ## Development
-- path of vpn binary: ?/opt/cisco/secureclient/bin/vpn`
+- path of vpn binary: `/opt/cisco/secureclient/bin/vpn`
 - get vpn state: `/opt/cisco/secureclient/bin/vpn state | grep -E 'state:' | tail -n 1`
