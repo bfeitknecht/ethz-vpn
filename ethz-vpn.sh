@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
+HELP_MESSAGE="figure it out."
+
 case "$1" in
+    toggle)
+        ./etzh-vpn-toggle.sh
+        ;;
     connect)
         ./ethz-vpn-connect.exp
         ;;
@@ -14,7 +19,7 @@ case "$1" in
         /opt/cisco/secureclient/bin/vpn status
         ;;
     *)
-        echo "Usage: $0 {connect|disconnect|stats|status}"
+        echo $HELP_MESSAGE
         exit 1
         ;;
 esac

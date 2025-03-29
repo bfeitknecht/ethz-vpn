@@ -1,6 +1,7 @@
 # ETHZ VPN CLI
 
-This is a small `expect` script for managing the ETHZ VPN on macOS.
+This is a small CLI script for managing the ETHZ VPN on macOS. It works but still in progress.
+
 
 ## Dependencies
 - `totp-cli` database with ETHZ OTP secret token
