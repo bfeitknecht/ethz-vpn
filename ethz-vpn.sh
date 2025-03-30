@@ -17,7 +17,7 @@ connect() {
 
 
 
-    #check if VPN is already connected
+    # check if VPN is already connected
     spawn ./vpn state
 
     expect {
