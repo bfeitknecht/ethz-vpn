@@ -2,38 +2,6 @@
 
 HELP_MESSAGE="figure it out."
 
-case "$1" in
-    toggle)
-        toggle
-        ;;
-    connect)
-        connect
-        ;;
-    disconnect)
-        /opt/cisco/secureclient/bin/vpn disconnect
-        ;;
-    stats)
-        /opt/cisco/secureclient/bin/vpn stats
-        ;;
-    status)
-        /opt/cisco/secureclient/bin/vpn status
-        ;;
-    *)
-        echo $HELP_MESSAGE
-        exit 1
-        ;;
-esac
-
-toggle() {
-	CONNECTED=$(/opt/cisco/secureclient/bin/vpn state | grep -q "state: Connected")
-
-	if [ "$CONNECTED" ]; then
-		/opt/cisco/secureclient/bin/vpn disconnect
-	else
-		./ethz-vpn-connect.exp
-	fi
-}
-
 connect() {
     expect << 'EOF'
     #!/usr/bin/expect
@@ -42,7 +10,7 @@ connect() {
 
     set timeout 3                   ;# timeout in seconds
     set addr "sslvpn.ethz.ch"       ;# VPN host address
-    set user "bfeitknecht@student-net.ethz.ch"      ;# ethz username, make this stored in variable?
+    set user "user@student-net.ethz.ch"      ;# ethz username, make this stored in variable?
     set group "1"                                   ;# assuming "student-net" corresponds to group 1
     set ETHZ_VPN "ETHZ_VPN"                         ;# keychainItem for vpn account password
     set TOTP_CLI_DB "TOTP_CLI_DB"                   ;# keychainItem for totp-cli database password
@@ -87,9 +55,41 @@ connect() {
 
     expect eof
 
-    #expect "state: Connected"
+    # expect "state: Connected"
 
-    # uncomment this line to keep the shell open for interactive use
-    #interact
+    # uncomment to keep interactive shell open
+    # interact
     EOF
 }
+
+toggle() {
+	CONNECTED=$(/opt/cisco/secureclient/bin/vpn state | grep -q "state: Connected")
+
+	if [ "$CONNECTED" ]; then
+		/opt/cisco/secureclient/bin/vpn disconnect
+	else
+	   connect
+	fi
+}
+
+case "$1" in
+    toggle)
+        toggle
+        ;;
+    connect)
+        connect
+        ;;
+    disconnect)
+        /opt/cisco/secureclient/bin/vpn disconnect
+        ;;
+    stats)
+        /opt/cisco/secureclient/bin/vpn stats
+        ;;
+    status)
+        /opt/cisco/secureclient/bin/vpn status
+        ;;
+    *)
+        echo $HELP_MESSAGE
+        exit 1
+        ;;
+esac
