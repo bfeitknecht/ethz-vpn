@@ -4,10 +4,10 @@ HELP_MESSAGE="figure it out."
 
 case "$1" in
     toggle)
-        ./etzh-vpn-toggle.sh
+        toggle
         ;;
     connect)
-        ./ethz-vpn-connect.exp
+        connect
         ;;
     disconnect)
         /opt/cisco/secureclient/bin/vpn disconnect
@@ -24,61 +24,72 @@ case "$1" in
         ;;
 esac
 
+toggle() {
+	CONNECTED=$(/opt/cisco/secureclient/bin/vpn state | grep -q "state: Connected")
 
-read -r -d '' VPN_CONNECT << 'EOF'
-#!/usr/bin/expect
-
-cd /opt/cisco/secureclient/bin
-
-set timeout 3                   ;# timeout in seconds
-set addr "sslvpn.ethz.ch"       ;# VPN host address
-set user "bfeitknecht@student-net.ethz.ch"      ;# ethz username, make this stored in variable?
-set group "1"                                   ;# assuming "student-net" corresponds to group 1
-set ETHZ_VPN "ETHZ_VPN"                         ;# keychainItem for vpn account password
-set TOTP_CLI_DB "TOTP_CLI_DB"                   ;# keychainItem for totp-cli database password
-
-
-
-#check if VPN is already connected
-spawn ./vpn state
-
-expect {
-    "state: Connected" {
-        send_user "\nVPN is already connected. Exiting..\n\n"
-        exit 0
-    }
-    "state: Disconnected" {
-        send_user "\nVPN is not connected. Proceeding..\n\n"
-    }
-    timeout {
-        send_user "\ntimed out while checking VPN state. Proceeding..\n\n"
-    }
+	if [ "$CONNECTED" ]; then
+		/opt/cisco/secureclient/bin/vpn disconnect
+	else
+		./ethz-vpn-connect.exp
+	fi
 }
 
-spawn ./vpn
-sleep 1  ;# add a 1-second delay
+connect() {
+    expect << 'EOF'
+    #!/usr/bin/expect
 
-expect "VPN>"
-send -- "connect $addr\r"
+    cd /opt/cisco/secureclient/bin
 
-expect "Group:"
-send -- "$group\r"
+    set timeout 3                   ;# timeout in seconds
+    set addr "sslvpn.ethz.ch"       ;# VPN host address
+    set user "bfeitknecht@student-net.ethz.ch"      ;# ethz username, make this stored in variable?
+    set group "1"                                   ;# assuming "student-net" corresponds to group 1
+    set ETHZ_VPN "ETHZ_VPN"                         ;# keychainItem for vpn account password
+    set TOTP_CLI_DB "TOTP_CLI_DB"                   ;# keychainItem for totp-cli database password
 
-expect "Username:"
-send -- "$user\r"
 
-expect "Password:"
-set password [exec security find-generic-password -s $ETHZ_VPN -w] ;# retrieve vpn account password from keychain
-send -- "$password\r"
 
-expect "Second Password:"
-set TOTP [exec security find-generic-password -s $TOTP_CLI_DB -w | totp-cli generate ETH bfeitknecht@ethz.ch 2>/dev/null] ;# retrieve TOTP from totp-cli
-send -- "$TOTP\r"
+    #check if VPN is already connected
+    spawn ./vpn state
 
-expect eof
+    expect {
+        "state: Connected" {
+            send_user "\nVPN is already connected. Exiting..\n\n"
+            exit 0
+        }
+        "state: Disconnected" {
+            send_user "\nVPN is not connected. Proceeding..\n\n"
+        }
+        timeout {
+            send_user "\ntimed out while checking VPN state. Proceeding..\n\n"
+        }
+    }
 
-#expect "state: Connected"
+    spawn ./vpn
+    sleep 1  ;# add a 1-second delay
 
-# uncomment this line to keep the shell open for interactive use
-#interact
-EOF
+    expect "VPN>"
+    send -- "connect $addr\r"
+
+    expect "Group:"
+    send -- "$group\r"
+
+    expect "Username:"
+    send -- "$user\r"
+
+    expect "Password:"
+    set password [exec security find-generic-password -s $ETHZ_VPN -w] ;# retrieve vpn account password from keychain
+    send -- "$password\r"
+
+    expect "Second Password:"
+    set TOTP [exec security find-generic-password -s $TOTP_CLI_DB -w | totp-cli generate ETH bfeitknecht@ethz.ch 2>/dev/null] ;# retrieve TOTP from totp-cli
+    send -- "$TOTP\r"
+
+    expect eof
+
+    #expect "state: Connected"
+
+    # uncomment this line to keep the shell open for interactive use
+    #interact
+    EOF
+}

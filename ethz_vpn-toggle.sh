@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 
-VPN_STATE=$(/opt/cisco/secureclient/bin/vpn state | grep -c "state: Connected")
+vpn_toggle() {
+	VPN_STATE=$(/opt/cisco/secureclient/bin/vpn state | grep -q "state: Connected")
 
-if [ "$VPN_STATE" -gt 0 ]; then
-    # VPN is connected, disconnect
-	/opt/cisco/secureclient/bin/vpn disconnect
-else
-    # VPN is disconnected, connect
-    ./ethz-vpn-connect.exp
-fi
+	if [ "$VPN_STATE" ]; then
+		/opt/cisco/secureclient/bin/vpn disconnect
+	else
+		./ethz-vpn-connect.exp
+	fi
+}
+
+vpn_toggle
