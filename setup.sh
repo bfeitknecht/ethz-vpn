@@ -2,10 +2,10 @@
 
 set -e
 
+KEY_KURZ="ETHZ_KUERZEL"
 KEY_VPN="ETHZ_VPN"
 KEY_TOTP="TOTP_CLI_DB"
 ACCOUNT_NAME="$(whoami)"
-
 
 # check for totp-cli
 if ! command -v totp-cli >/dev/null 2>&1; then
@@ -24,7 +24,7 @@ if ! command -v totp-cli >/dev/null 2>&1; then
     brew install totp-cli
 fi
 
-function check_keychain_item() {
+function check_keychain() {
     local service="$1"
     if security find-generic-password -s "$service" >/dev/null 2>&1; then
         return 0
@@ -33,7 +33,7 @@ function check_keychain_item() {
     fi
 }
 
-function add_keychain_item() {
+function add_keychain() {
     local service="$1"
     local prompt="$2"
     read -rsp "$prompt: " password
@@ -42,17 +42,25 @@ function add_keychain_item() {
 }
 
 # check keychain for VPN password
-if check_keychain_item "$KEY_VPN"; then
+if check_keychain "$KEY_VPN"; then
     echo "Keychain item '$KEY_VPN' already exists."
 else
-    add_keychain_item "$KEY_VPN" "Enter your ETHZ VPN password"
+    add_keychain "$KEY_VPN" "Enter ETHZ VPN password"
 fi
 
 # check keychain for totp-cli database password
-if check_keychain_item "$KEY_TOTP"; then
+if check_keychain "$KEY_TOTP"; then
     echo "Keychain item '$KEY_TOTP' already exists."
 else
-    add_keychain_item "$KEY_TOTP" "Enter your totp-cli database password"
+    add_keychain "$KEY_TOTP" "Enter totp-cli database password"
+fi
+
+# check keychain for n.ethz kürzel
+if check_keychain "$KEY_KURZ"; then
+    echo "Keychain item '$KEY_KURZ' already exists."
+else
+    read -rp "Enter ETHZ kürzel: " account
+    security add-generic-password -a "$ACCOUNT_NAME" -s "$KEY_KURZ" -w "$account" -U
 fi
 
 echo "Installation and setup complete."

@@ -1,6 +1,6 @@
 # ETHZ VPN CLI
 
-This is a small `expect` script for managing the ETHZ VPN on macOS. It works but is still in progress.
+This is a small `expect` script for managing the ETHZ VPN on macOS. It works but development is still in progress.
 
 
 ## Dependencies

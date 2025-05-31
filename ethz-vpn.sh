@@ -1,16 +1,11 @@
 #!/usr/bin/env bash
 
-USERNAME=""                 # ETHZ username (kürzel)
+KEY_KURZ="ETHZ_KUERZEL"     # ETHZ username (kürzel)
 KEY_VPN="ETHZ_VPN"          # keychainItem of ETHZ VPN password
 KEY_TOTP="TOTP_CLI_DB"      # keychainItem of totp-cli database password
 
-# Check if USERNAME is set
-if [ -z "$USERNAME" ]; then
-    echo "*** ERROR: \$USERNAME needs to be set to your ETHZ kürzel!"
-    exit 1
-fi
-
 connect() {
+    USERNAME=$(security find-generic-password -s $KEY_KURZ -w)
     SCRIPT=$(cat <<-EOF
 		cd /opt/cisco/secureclient/bin
 
@@ -81,11 +76,11 @@ HELP_MESSAGE="\
 Usage: ethz-vpn.sh <command>
 
 Commands:
-    connect      Connect to the VPN (with automatic 2FA).
-    disconnect   Disconnect from the VPN.
-    toggle       Toggle VPN connection (connect if disconnected, disconnect if connected).
-    status       Show current VPN connection status.
-    stats        Show VPN connection statistics.
+    connect      Connect to the VPN (with automatic 2FA)
+    disconnect   Disconnect from the VPN
+    toggle       Toggle VPN connection (connect if disconnected, disconnect if connected)
+    status       Show current VPN connection status
+    stats        Show VPN connection statistics
 
 Make sure your credentials for the VPN and totp-cli are stored in the macOS Keychain as required.
 "
