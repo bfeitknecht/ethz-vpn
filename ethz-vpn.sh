@@ -1,21 +1,72 @@
 #!/usr/bin/env bash
 
 KEY_KURZ="ETHZ_KUERZEL"     # ETHZ username (kürzel)
-KEY_VPN="ETHZ_VPN"          # keychainItem of ETHZ VPN password
-KEY_TOTP="TOTP_CLI_DB"      # keychainItem of totp-cli database password
+KEY_VPN="ETHZ_VPN"          # ETHZ VPN password
+KEY_TOTP="ETHZ_TOTP_TOKEN"  # ETHZ TOTP token
+VPN="/opt/cisco/secureclient/bin/vpn"   # cisco VPN binary
 
-connect() {
-    USERNAME=$(security find-generic-password -s $KEY_KURZ -w)
-    SCRIPT=$(cat <<-EOF
-		cd /opt/cisco/secureclient/bin
+function setup() {
+    set -e
 
+    # account associated with keychain
+    account="$(whoami)"
+
+    # check for totp-cli
+    if ! command -v totp-cli &>/dev/null; then
+        echo "totp-cli not found. Would you like to install it via Homebrew? [y/N]"
+        read -r response
+        if [[ ! "$response" =~ ^[Yy]$ ]]; then
+            echo "Installation aborted."
+            return 1
+        fi
+
+        # check for homebrew
+        if ! command -v brew &>/dev/null; then
+            echo "Homebrew is not installed. Please install it first: https://brew.sh/"
+            return 1
+        fi
+        brew install totp-cli
+    fi
+
+    # check keychain for n.ethz kürzel
+    if security find-generic-password -s "$KEY_KURZ" &>/dev/null; then
+        echo "Keychain item '$KEY_KURZ' already exists."
+    else
+        read -r "Enter ETHZ kürzel: " kuerzel
+        security add-generic-password -a "$account" -s "$KEY_KURZ" -w "$kuerzel" -U
+    fi
+
+    # check keychain for VPN password
+    if security find-generic-password -s "$KEY_VPN" &>/dev/null; then
+        echo "Keychain item '$KEY_VPN' already exists."
+    else
+        read -rsp "Enter ETHZ VPN password: " password
+        echo
+        security add-generic-password -a "$account" -s "$KEY_VPN" -w "$password" -U
+    fi
+
+    # check keychain for TOTP token
+    if security find-generic-password -s "$KEY_TOTP" &>/dev/null; then
+        echo "Keychain item '$KEY_TOTP' already exists."
+    else
+        read -rsp "Enter ETHZ TOTP token: " token
+        echo
+        security add-generic-password -a "$account" -s "$KEY_TOTP" -w "$token" -U
+    fi
+
+    echo "Setup complete. You can now use ethz-vpn.sh to connect to the ETH VPN."
+}
+
+function connect() {
+    username=$(security find-generic-password -s $KEY_KURZ -w)
+    script=$(cat <<-EOF
 		set timeout 3                   ;# timeout in seconds
 		set addr "sslvpn.ethz.ch"       ;# VPN host address
-		set user "$USERNAME@student-net.ethz.ch"        ;# VPN user account
+		set user "$username@student-net.ethz.ch"        ;# VPN user account
 		set group "1"                                   ;# assuming "student-net" corresponds to group 1
 
 		# check if VPN is already connected
-		spawn ./vpn state
+		spawn $VPN state
 
 		expect {
 			"state: Connected" {
@@ -31,7 +82,7 @@ connect() {
 			}
 		}
 
-		spawn ./vpn
+		spawn $VPN
 		sleep 1
 
 		expect "VPN>"
@@ -48,25 +99,18 @@ connect() {
 		send -- "\$password\r"
 
 		expect "Second Password:"
-		set otp [exec security find-generic-password -s $KEY_TOTP -w | totp-cli generate ETHZ VPN 2> /dev/null] ;# retrieve TOTP from totp-cli
+		set otp [exec security find-generic-password -s $KEY_TOTP -w | totp-cli instant] ;# retrieve TOTP from totp-cli
 		send -- "\$otp\r"
 
 		expect eof
-
-		# expect "state: Connected"
-
-		# uncomment to keep interactive shell open
-		# interact
 	EOF
     )
-    echo "$SCRIPT" | expect -
+    echo "$script" | expect -
 }
 
-toggle() {
-	CONNECTED=$(/opt/cisco/secureclient/bin/vpn state | grep -q "state: Connected")
-
-	if [ "$CONNECTED" ]; then
-		/opt/cisco/secureclient/bin/vpn disconnect
+function toggle() {
+	if $VPN state | grep -q "state: Connected"; then
+	    $VPN disconnect
 	else
 	   connect
 	fi
@@ -76,17 +120,20 @@ HELP_MESSAGE="\
 Usage: ethz-vpn.sh <command>
 
 Commands:
+    setup        Set up credentials and TOTP token for VPN connection
     connect      Connect to the VPN (with automatic 2FA)
     disconnect   Disconnect from the VPN
     toggle       Toggle VPN connection (connect if disconnected, disconnect if connected)
     status       Show current VPN connection status
     stats        Show VPN connection statistics
 
-Make sure your credentials for the VPN and totp-cli are stored in the macOS Keychain as required.
+Make sure your credentials for the VPN and ETHZ TOTP are stored in the macOS Keychain as required.
 "
 
-
 case "$1" in
+    setup)
+        setup
+        ;;
     toggle)
         toggle
         ;;
@@ -94,13 +141,13 @@ case "$1" in
         connect
         ;;
     disconnect)
-        /opt/cisco/secureclient/bin/vpn disconnect
+        $VPN disconnect
         ;;
     stats)
-        /opt/cisco/secureclient/bin/vpn stats
+        $VPN stats
         ;;
     status)
-        /opt/cisco/secureclient/bin/vpn status
+        $VPN status
         ;;
     *)
         echo "$HELP_MESSAGE"
