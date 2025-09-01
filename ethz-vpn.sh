@@ -32,7 +32,7 @@ function setup() {
     if security find-generic-password -s "$KEY_KURZ" &>/dev/null; then
         echo "Keychain item '$KEY_KURZ' already exists."
     else
-        read -r "Enter ETHZ kürzel: " kuerzel
+        read -r "Enter ETHZ username (kürzel): " kuerzel
         security add-generic-password -a "$account" -s "$KEY_KURZ" -w "$kuerzel" -U
     fi
 
@@ -54,7 +54,7 @@ function setup() {
         security add-generic-password -a "$account" -s "$KEY_TOTP" -w "$token" -U
     fi
 
-    echo "Setup complete. You can now use ethz-vpn.sh to connect to the ETH VPN."
+    echo "Setup complete. You can now use ethz-vpn.sh to connect to the ETHZ VPN."
 }
 
 function connect() {
@@ -116,6 +116,8 @@ function toggle() {
 	fi
 }
 
+VERSION="v0.1.0"
+
 HELP_MESSAGE="\
 Usage: ethz-vpn.sh <command>
 
@@ -128,6 +130,8 @@ Commands:
     stats        Show VPN connection statistics
 
 Make sure your credentials for the VPN and ETHZ TOTP are stored in the macOS Keychain as required.
+
+For further information visit https://github.com/bfeitknecht/ethz-vpn.
 "
 
 case "$1" in
@@ -148,6 +152,9 @@ case "$1" in
         ;;
     status)
         $VPN status
+        ;;
+    "--version")
+        echo "ethz-vpn.sh $VERSION"
         ;;
     *)
         echo "$HELP_MESSAGE"

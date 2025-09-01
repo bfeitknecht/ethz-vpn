@@ -1,23 +1,20 @@
-# ETHZ VPN CLI
+# ETHZ VPN
 
-This is a small `expect` script for managing the ETHZ VPN on macOS. It works but development is still in progress.
+Little script for managing the ETHZ VPN on macOS.
 
 
 ## Dependencies
 
-- `totp-cli` database with ETHZ's secret token for OTP
-- `security` keychain item with VPN and `totp-cli` database password
+The ETHZ TOTP token is required. Either `totp-cli` is already installed or it will be installed with `brew`. The native `security` utility is used to safely store the credentials.
 
 
-## Setup
+## Installation
 
-A setup script is provided for convenience. Remember to set `$USERNAME` to your ETHZ username (kürzel) in `ethz-vpn.sh`.
+Just clone this repository. A setup subcommand is provided for convenience.
 
-```
+```zsh
 git clone https://github.com/bfeitknecht/ethz-vpn
-bash ethz-vpn/setup.sh
+./ethz-vpn setup
 # ...
-echo "alias vpn=$(pwd)/ethz-vpn/ethz-vpn.sh" >> ~/.zshrc
+echo "alias vpn=$(pwd)/ethz-vpn/ethz-vpn.sh" >> ~/.zshrc # or similar for your shell
 ```
-
-Or similar for your shell
