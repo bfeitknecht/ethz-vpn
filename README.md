@@ -14,7 +14,8 @@ Just clone this repository. A setup subcommand is provided for convenience.
 
 ```zsh
 git clone https://github.com/bfeitknecht/ethz-vpn
+cd ethz-vpn
 ./ethz-vpn setup
 # ...
-echo "alias vpn=$(pwd)/ethz-vpn/ethz-vpn.sh" >> ~/.zshrc # or similar for your shell
+echo "alias vpn=$(pwd)/ethz-vpn.sh" >> ~/.zshrc # or similar for your shell
 ```
