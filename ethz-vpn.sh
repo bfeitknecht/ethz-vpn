@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
+#
+# DEPENDENCIES:
+# - EHTZ VPN client (secureclient)
 
-KEY_KURZ="ETHZ_KUERZEL"     # ETHZ username (kürzel)
-KEY_VPN="ETHZ_VPN"          # ETHZ VPN password
-KEY_TOTP="ETHZ_TOTP_TOKEN"  # ETHZ TOTP token
+KEY_KURZ="ETHZ_KUERZEL"         # ETHZ username (kürzel)
+KEY_PASSWD="ETHZ_VPN_PASSWD"    # ETHZ VPN password
+KEY_TOTP="ETHZ_TOTP_TOKEN"      # ETHZ TOTP token
 VPN="/opt/cisco/secureclient/bin/vpn"   # cisco VPN binary
 
 function setup() {
@@ -37,12 +40,12 @@ function setup() {
     fi
 
     # check keychain for VPN password
-    if security find-generic-password -s "$KEY_VPN" &>/dev/null; then
-        echo "Keychain item '$KEY_VPN' already exists."
+    if security find-generic-password -s "$KEY_PASSWD" &>/dev/null; then
+        echo "Keychain item '$KEY_PASSWD' already exists."
     else
         read -rsp "Enter ETHZ VPN password: " password
         echo
-        security add-generic-password -a "$account" -s "$KEY_VPN" -w "$password" -U
+        security add-generic-password -a "$account" -s "$KEY_PASSWD" -w "$password" -U
     fi
 
     # check keychain for TOTP token
@@ -58,65 +61,35 @@ function setup() {
 }
 
 function connect() {
-    username=$(security find-generic-password -s $KEY_KURZ -w)
-    script=$(cat <<-EOF
-		set timeout 3                   ;# timeout in seconds
-		set addr "sslvpn.ethz.ch"       ;# VPN host address
-		set user "$username@student-net.ethz.ch"        ;# VPN user account
-		set group "1"                                   ;# assuming "student-net" corresponds to group 1
+    totp="$(security find-generic-password -s "$KEY_TOTP" -w | totp-cli instant)"
+    kurz="$(security find-generic-password -s "$KEY_KURZ" -w)"
+    passwd="$(security find-generic-password -s "$KEY_PASSWD" -w)"
+    "$VPN" -s <<EOF
+connect sslvpn.ethz.ch/student-net
+${kurz}@student-net.ethz.ch
+${passwd}
+${totp}
+EOF
+}
 
-		# check if VPN is already connected
-		spawn $VPN state
-
-		expect {
-			"state: Connected" {
-				send_user "\nVPN is already connected. Exiting...\n\n"
-				exit 0
-			}
-			"state: Disconnected" {
-				send_user "\nVPN is not connected. Proceeding...\n\n"
-			}
-			timeout {
-				send_user "\ntimed out while checking VPN state. Exiting...\n\n"
-				exit 1
-			}
-		}
-
-		spawn $VPN
-		sleep 1
-
-		expect "VPN>"
-		send -- "connect \$addr\r"
-
-		expect "Group:"
-		send -- "\$group\r"
-
-		expect "Username:"
-		send -- "\$user\r"
-
-		expect "Password:"
-		set password [exec security find-generic-password -s $KEY_VPN -w] ;# retrieve vpn account password from keychain
-		send -- "\$password\r"
-
-		expect "Second Password:"
-		set otp [exec security find-generic-password -s $KEY_TOTP -w | totp-cli instant] ;# retrieve TOTP from totp-cli
-		send -- "\$otp\r"
-
-		expect eof
-	EOF
-    )
-    echo "$script" | expect -
+function connected() {
+    coproc vpnc { stdbuf -oL "$VPN" state; }
+    while read -r line <&"${vpnc[0]}"; do
+        if [[ "$line" =~ Disconnected ]]; then
+            return 1
+        fi
+    done
 }
 
 function toggle() {
-	if $VPN state | grep -q "state: Connected"; then
-	    $VPN disconnect
-	else
-	   connect
-	fi
+    if connected; then
+        "$VPN" disconnect
+    else
+        connect
+    fi
 }
 
-VERSION="v0.1.0"
+VERSION="v0.1.1"
 
 HELP_MESSAGE="\
 Usage: ethz-vpn.sh <command>
@@ -145,13 +118,13 @@ case "$1" in
         connect
         ;;
     disconnect)
-        $VPN disconnect
+        "$VPN" disconnect
         ;;
     stats)
-        $VPN stats
+        "$VPN" stats
         ;;
     status)
-        $VPN status
+        connected
         ;;
     "--version")
         echo "ethz-vpn.sh $VERSION"
