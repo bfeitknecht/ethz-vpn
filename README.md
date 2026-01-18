@@ -2,11 +2,9 @@
 
 Little script for managing the ETHZ VPN on macOS.
 
-
 ## Dependencies
 
-The ETHZ TOTP token is required. Either `totp-cli` is already installed or it will be installed with `brew`. The native `security` utility is used to safely store the credentials.
-
+Your ETHZ TOTP token is required to generate 2FA codes with [`totp-cli`](https://github.com/yitsushi/totp-cli). If the binary is not installed can optionally be installed with [`brew`](https://homebrew.sh). The native `security` utility is used to safely store the credentials.
 
 ## Installation
 
@@ -19,3 +17,4 @@ cd ethz-vpn
 # ...
 echo "alias vpn=$(pwd)/ethz-vpn.sh" >> ~/.zshrc # or similar for your shell
 ```
+
